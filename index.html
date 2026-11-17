@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080b18"><meta name="description" content="NOVA Chess — local Stockfish chess training and analysis.">
+<link rel="manifest" href="./manifest.json"><link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>NOVA CHESS</title>
+<style>
+:root{color-scheme:dark;--bg:#070914;--panel:#11162a;--panel2:#171e36;--line:#293252;--text:#f2f3ff;--muted:#9ca6c8;--accent:#a78bfa;--accent2:#67d5f5;--good:#6ee7b7;--bad:#fb7185;--sq1:#e5e4f0;--sq2:#69749b;--glow:0 0 28px #8b5cf633}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 18% 0%,#24204b 0,transparent 38%),radial-gradient(ellipse at 90% 25%,#102d4b 0,transparent 35%),var(--bg);color:var(--text);font:15px/1.45 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.55;background-image:radial-gradient(1px 1px at 10% 15%,#fff 98%,transparent),radial-gradient(1px 1px at 65% 22%,#b8c8ff 98%,transparent),radial-gradient(1px 1px at 85% 70%,#fff 98%,transparent),radial-gradient(1px 1px at 32% 82%,#d8c6ff 98%,transparent),radial-gradient(1px 1px at 53% 53%,#fff 98%,transparent);background-size:220px 220px}
+button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#1b2340;color:var(--text);border-radius:12px;padding:10px 13px}button:active{transform:scale(.98)}button.primary{background:linear-gradient(135deg,#7654dc,#4c70c9);border-color:#9a83ff;box-shadow:var(--glow)}button:disabled{opacity:.45;cursor:not-allowed}
+header{position:sticky;top:0;z-index:5;backdrop-filter:blur(18px);background:#080b18d9;border-bottom:1px solid #252c48;padding:13px max(16px,env(safe-area-inset-left));display:flex;align-items:center;justify-content:space-between}
+.brand{font-weight:900;letter-spacing:.18em;font-size:17px}.brand span{color:var(--accent)}.status{font-size:11px;color:var(--good);letter-spacing:.1em}
+main{position:relative;max-width:1120px;margin:auto;padding:20px 15px 50px;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);gap:18px}
+.panel{background:linear-gradient(155deg,#151b31eF,#0e1325f2);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 18px 60px #0005;backdrop-filter:blur(14px)}
+.board-wrap{max-width:620px;margin:auto}.board-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:var(--muted);font-size:12px}.board{display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1;border:3px solid #333d60;border-radius:9px;overflow:hidden;box-shadow:0 15px 40px #0008}
+.square{border:0;border-radius:0;padding:0;aspect-ratio:1;display:grid;place-items:center;position:relative;font-size:clamp(25px,6vw,56px);line-height:1;user-select:none}.light{background:var(--sq1);color:#151a2c}.dark{background:var(--sq2);color:#fff}.square.selected{box-shadow:inset 0 0 0 4px var(--accent);z-index:1}.square.target:after{content:"";width:25%;height:25%;border-radius:50%;background:#9a8bff99;position:absolute}.square.capture:after{content:"";position:absolute;inset:5%;border:4px solid #a78bfa;border-radius:50%}.piece{filter:drop-shadow(0 2px 1px #0005);pointer-events:none}.coord{position:absolute;font-size:9px;bottom:2px;left:3px;opacity:.7}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.controls button{flex:1;min-width:90px}.move-line{color:var(--muted);font-size:12px;margin-top:12px;min-height:20px}
+h2{font-size:15px;letter-spacing:.08em;margin:0 0 13px;text-transform:uppercase;color:#d9d7ff}.field{margin:13px 0}.field label{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-bottom:7px}.field input[type=range]{width:100%;accent-color:var(--accent)}.field select,.field input[type=text]{width:100%;background:#090e1e;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mode button.active{border-color:var(--accent);background:#4b3a83}
+.metric{display:grid;grid-template-columns:1fr 1fr;gap:8px}.metric>div{background:#0b1021;border:1px solid #222c4b;border-radius:12px;padding:12px}.metric small{color:var(--muted);display:block;font-size:10px;letter-spacing:.1em}.metric strong{font-size:20px}
+.evalbar{height:8px;border-radius:9px;background:#252d47;overflow:hidden;margin-top:10px}.evalbar>div{height:100%;width:50%;background:linear-gradient(90deg,#8b79f6,#71d5ee);transition:width .3s}
+.move-card{margin-top:12px;padding:13px;border-radius:14px;background:linear-gradient(120deg,#26204b,#142c43);border:1px solid #514b83}.move-card .move{font-size:27px;font-weight:800;color:#e5dcff}.muted{color:var(--muted);font-size:12px}.hint{font-size:12px;color:var(--muted);line-height:1.5}.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.swatches{display:flex;gap:8px;flex-wrap:wrap}.swatch{width:30px;height:30px;padding:0;border-radius:50%;border:2px solid #ffffff55}.history{max-height:140px;overflow:auto;font-size:13px;color:#d4d9f1;background:#0a1020;border-radius:10px;padding:10px}
+footer{text-align:center;color:#727d9f;font-size:11px;padding:0 20px 25px}
+@media(max-width:780px){main{grid-template-columns:1fr;padding:13px 10px 35px;gap:12px}.panel{padding:13px;border-radius:17px}.board-wrap{max-width: min(100%,560px)}header{padding-top:calc(11px + env(safe-area-inset-top))}.square{font-size:clamp(24px,9vw,48px)}}
+</style>
+</head>
+<body>
+<header><div class="brand">NOVA <span>CHESS</span></div><div class="status" id="engineStatus">● ENGINE READY</div></header>
+<main>
+<section class="panel">
+ <div class="board-top"><span>TRAINING BOARD</span><span id="turnLabel">WHITE TO MOVE</span></div>
+ <div class="board-wrap"><div id="board" class="board" role="grid" aria-label="Chessboard"></div></div>
+ <div class="controls"><button id="newGame">New game</button><button id="undo">Undo</button><button id="flip">Flip board</button></div>
+ <div class="move-line" id="moveLine">Tap a piece, then tap a legal destination.</div>
+ <div class="controls"><button class="primary" id="analyse">Analyse position</button><button id="copyFen">Copy FEN</button></div>
+ <div class="field"><label for="fenInput">Load a position (FEN)</label><input id="fenInput" type="text" placeholder="Paste FEN here"></div>
+ <button id="loadFen" style="width:100%">Load position</button>
+</section>
+<aside class="panel">
+ <h2>Player simulation</h2>
+ <div class="field"><label for="elo">Target strength <strong id="eloValue">1500 ELO</strong></label><input id="elo" type="range" min="1320" max="2850" step="10" value="1500"></div>
+ <div class="mode"><button id="normal" class="active">Normal</button><button id="bullet">Bullet</button></div>
+ <p class="hint" id="modeHint">Normal mode uses a longer search for more considered training feedback.</p>
+ <div class="field"><label for="depth">Analysis depth <strong id="depthValue">13</strong></label><input id="depth" type="range" min="8" max="20" value="13"></div>
+ <div class="controls"><button class="primary" id="engineStart">Load Stockfish</button><button id="stopEngine">Stop</button></div>
+ <div class="metric" style="margin-top:14px"><div><small>POSITION SCORE</small><strong id="score">—</strong></div><div><small>SEARCH DEPTH</small><strong id="depthOut">—</strong></div></div>
+ <div class="evalbar"><div id="evalFill"></div></div>
+ <div class="move-card"><div class="muted">TRAINING SUGGESTION</div><div class="move" id="bestMove">Analyse a position</div><div class="muted" id="moveExplain">Moves are evaluated on this practice board.</div></div>
+ <div class="field"><label>Board highlight colour</label><div class="swatches" id="swatches"><button class="swatch" data-colour="#a78bfa" style="background:#a78bfa"></button><button class="swatch" data-colour="#67d5f5" style="background:#67d5f5"></button><button class="swatch" data-colour="#6ee7b7" style="background:#6ee7b7"></button><button class="swatch" data-colour="#fb7185" style="background:#fb7185"></button><button class="swatch" data-colour="#fbbf24" style="background:#fbbf24"></button></div></div>
+ <div class="field"><label for="opacity">Panel opacity <strong id="opacityValue">94%</strong></label><input id="opacity" type="range" min="55" max="100" value="94"></div>
+ <h2 style="margin-top:18px">Move history</h2><div class="history" id="history">No moves yet.</div>
+ <p class="hint" style="margin-top:14px">NOVA is a practice and analysis board. Enter positions manually or load a FEN; it does not read Chess.com screens or provide assistance during live matches. Target ELO is an approximate training-strength setting, not a guaranteed rating conversion.</p>
+</aside>
+</main>
+<footer>Local analysis · No ChatGPT API · Settings saved on this device</footer>
+<script type="module">
+import { Chess } from 'https://esm.sh/chess.js@1.4.0';
+const $=id=>document.getElementById(id);
+const storeKey='nova-chess-settings-v1';
+const defaults={elo:1500,mode:'normal',depth:13,opacity:94,colour:'#a78bfa'};
+let settings={...defaults,...JSON.parse(localStorage.getItem(storeKey)||'{}')};
+let game=new Chess(),selected=null,flipped=false,worker=null,engineReady=false,lastBest=null,lastScore=0;
+const pieceGlyph={w:{k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},b:{k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}};
+function save(){localStorage.setItem(storeKey,JSON.stringify(settings))}
+function setStatus(s){$('engineStatus').textContent='● '+s.toUpperCase()}
+function squares(){let files='abcdefgh',ranks='12345678',out=[];if(flipped){files=[...files].reverse().join('');ranks=[...ranks].reverse().join('')}for(let r of ranks)for(let f of files)out.push(f+r);return out}
+function render(){const b=$('board');b.innerHTML='';const legal=selected?game.moves({square:selected,verbose:true}):[];for(const sq of squares()){const p=game.get(sq),file=sq.charCodeAt(0)-97,rank=Number(sq[1]);const light=(file+rank)%2===0;const el=document.createElement('button');el.className='square '+(light?'light':'dark');el.setAttribute('role','gridcell');el.setAttribute('aria-label',sq+(p?' '+p.color+' '+p.type:''));if(selected===sq)el.classList.add('selected');if(legal.some(m=>m.to===sq))el.classList.add(p?'capture':'target');if(p){const span=document.createElement('span');span.className='piece';span.textContent=pieceGlyph[p.color][p.type];el.append(span)}if((!flipped&&rank===1)||(flipped&&rank===8)){const c=document.createElement('span');c.className='coord';c.textContent=sq[0];el.append(c)}el.addEventListener('click',()=>tap(sq));b.append(el)}$('turnLabel').textContent=game.isGameOver()?'GAME OVER':(game.turn()==='w'?'WHITE':'BLACK')+' TO MOVE';$('history').textContent=historyText()||'No moves yet.'}
+function historyText(){const a=game.history();let lines=[];for(let i=0;i<a.length;i+=2)lines.push((i/2+1)+'. '+a[i]+(a[i+1]?'  '+a[i+1]:''));return lines.join('\n')}
+function tap(sq){if(game.isGameOver())return;const p=game.get(sq);if(selected){try{const move=game.move({from:selected,to:sq,promotion:'q'});if(move){selected=null;$('moveLine').textContent=move.san+' played. Analyse when ready.';render();return}}catch(e){} }selected=p&&p.color===game.turn()?sq:null;render()}
+function updateSettingsUI(){$('elo').value=settings.elo;$('eloValue').textContent=settings.elo+' ELO';$('depth').value=settings.depth;$('depthValue').textContent=settings.depth;$('opacity').value=settings.opacity;$('opacityValue').textContent=settings.opacity+'%';$('normal').classList.toggle('active',settings.mode==='normal');$('bullet').classList.toggle('active',settings.mode==='bullet');document.documentElement.style.setProperty('--accent',settings.colour);document.querySelectorAll('.panel').forEach(x=>x.style.backgroundColor='rgba(17,22,42,'+(settings.opacity/100)+')');$('modeHint').textContent=settings.mode==='bullet'?'Bullet mode uses a short search budget for quick practice feedback.':'Normal mode uses a longer search for more considered training feedback.'}
+function engineUrl(){return 'https://cdn.jsdelivr.net/npm/stockfish@19.0.1/bin/stockfish-19-lite-single.js'}
+function startEngine(){if(worker){setStatus('ENGINE RUNNING');return}setStatus('LOADING STOCKFISH');try{worker=new Worker(engineUrl());worker.onmessage=e=>onEngine(String(e.data));worker.onerror=()=>{setStatus('ENGINE LOAD ERROR');$('moveExplain').textContent='Could not load Stockfish. Check your connection and try again.';worker?.terminate();worker=null};worker.postMessage('uci')}catch(e){setStatus('ENGINE ERROR');$('moveExplain').textContent='This browser could not start the engine.'}}
+function onEngine(line){if(line==='uciok'){worker.postMessage('setoption name Threads value 1');worker.postMessage('setoption name UCI_LimitStrength value true');worker.postMessage('isready')}else if(line==='readyok'){engineReady=true;setStatus('STOCKFISH READY')}else if(line.startsWith('info ')){const d=line.match(/ depth (\d+)/),sc=line.match(/ score (cp|mate) (-?\d+)/);if(d)$('depthOut').textContent=d[1];if(sc){lastScore=sc[1]==='mate'?(Number(sc[2])>0?'M'+sc[2]:'-M'+Math.abs(Number(sc[2]))):(Number(sc[2])/100).toFixed(2);$('score').textContent=lastScore;if(sc[1]==='cp')$('evalFill').style.width=Math.max(3,Math.min(97,50+Number(sc[2])/18))+'%'}}else if(line.startsWith('bestmove ')){const u=line.split(' ')[1];if(u&&u!=='(none)'){lastBest=u;$('bestMove').textContent=u.slice(0,2)+' → '+u.slice(2,4)+(u.length>4?'='+u[4].toUpperCase():'');$('moveExplain').textContent='Engine suggestion for the current practice position. Score is shown from the side-to-move perspective.';setStatus('ANALYSIS COMPLETE')}}}
+function analyse(){if(!engineReady){startEngine();$('moveExplain').textContent='Loading Stockfish. Tap Analyse position again when the engine is ready.';return}worker.postMessage('stop');const elo=Math.max(1320,Math.min(2850,Number(settings.elo)));worker.postMessage('setoption name UCI_Elo value '+elo);worker.postMessage('position fen '+game.fen());const depth=settings.mode==='bullet'?Math.min(10,Number(settings.depth)):Number(settings.depth);worker.postMessage('go depth '+depth);setStatus('ANALYSING')}
+$('elo').addEventListener('input',e=>{settings.elo=+e.target.value;$('eloValue').textContent=settings.elo+' ELO';save()});
+$('depth').addEventListener('input',e=>{settings.depth=+e.target.value;$('depthValue').textContent=settings.depth;save()});
+$('opacity').addEventListener('input',e=>{settings.opacity=+e.target.value;$('opacityValue').textContent=settings.opacity+'%';updateSettingsUI();save()});
+$('normal').onclick=()=>{settings.mode='normal';updateSettingsUI();save()};$('bullet').onclick=()=>{settings.mode='bullet';updateSettingsUI();save()};
+$('swatches').onclick=e=>{const c=e.target.dataset.colour;if(c){settings.colour=c;updateSettingsUI();save()}};
+$('newGame').onclick=()=>{game.reset();selected=null;lastBest=null;$('bestMove').textContent='Analyse a position';$('score').textContent='—';$('depthOut').textContent='—';$('moveLine').textContent='New game started.';render()};
+$('undo').onclick=()=>{game.undo();selected=null;render()};$('flip').onclick=()=>{flipped=!flipped;render()};
+$('analyse').onclick=analyse;$('engineStart').onclick=startEngine;$('stopEngine').onclick=()=>{if(worker&&engineReady)worker.postMessage('stop');setStatus(engineReady?'STOCKFISH READY':'ENGINE STOPPED')};
+$('copyFen').onclick=async()=>{try{await navigator.clipboard.writeText(game.fen());$('moveLine').textContent='FEN copied.'}catch(e){$('fenInput').value=game.fen();$('moveLine').textContent='FEN placed in the input field.'}};
+$('loadFen').onclick=()=>{try{const next=new Chess($('fenInput').value.trim());game=next;selected=null;render();$('moveLine').textContent='Position loaded.'}catch(e){$('moveLine').textContent='That FEN is invalid. Check the notation and try again.'}};
+updateSettingsUI();render();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
+</body></html>
