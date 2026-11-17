@@ -54,5 +54,5 @@ $('fenCopy').onclick=async()=>{try{await navigator.clipboard.writeText(g.fen());
 $('fenLoad').onclick=()=>{try{g=new Chess($('fen').value.trim());sel=null;$('hint').textContent='FEN loaded.';positionChanged()}catch(e){$('hint').textContent='Invalid FEN. Check the notation.'}};
 ui();render();
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-startEngine();
+pendingAnalysis=true;startEngine();
 </script></body></html>
