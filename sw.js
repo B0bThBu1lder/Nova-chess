@@ -1,1 +1,10 @@
-const CACHE='nova-shell-v1';const FILES=['./','./index.html','./manifest.json','./icon.svg','./engine-worker.js','./stockfish-loader.js'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.origin===location.origin&&e.request.method==='GET')e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(v=>{let c=v.clone();caches.open(CACHE).then(k=>k.put(e.request,c));return v})))})
+const CACHE='nova-shell-v2';
+const FILES=['./','./index.html','./manifest.json','./icon.svg','./engine-worker.js','./stockfish-loader.js'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('nova-shell-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{
+ const request=event.request,url=new URL(request.url);
+ if(url.origin!==location.origin||request.method!=='GET')return;
+ const refreshFirst=request.mode==='navigate'||/\\.(html|js|json|svg)$/.test(url.pathname);
+ event.respondWith((refreshFirst?fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy))}return response}).catch(()=>caches.match(request)):caches.match(request).then(cached=>cached||fetch(request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(request,copy))}return response}))));
+});
