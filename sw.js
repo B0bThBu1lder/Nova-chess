@@ -1,5 +1,5 @@
-const CACHE='nova-shell-v2';
-const FILES=['./','./index.html','./manifest.json','./icon.svg','./engine-worker.js','./stockfish-loader.js'];
+const CACHE='nova-shell-v3';
+const FILES=['./','./index.html','./manifest.json','./icon.svg','./engine-worker.js','./engine/stockfish-19-lite-single.js'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('nova-shell-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{

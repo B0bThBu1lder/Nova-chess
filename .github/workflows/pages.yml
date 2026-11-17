@@ -23,12 +23,26 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download pinned Stockfish browser engine
+        run: |
+          npm install --prefix .engine-build --no-save --no-package-lock --no-audit --no-fund stockfish@19.0.1
+          mkdir -p _site/engine
+          cp index.html manifest.json icon.svg sw.js _site/
+          cp .engine-build/node_modules/stockfish/bin/stockfish-19-lite-single.js _site/engine/
+          cp .engine-build/node_modules/stockfish/bin/stockfish-19-lite-single.wasm _site/engine/
+          test -s _site/engine/stockfish-19-lite-single.js
+          test -s _site/engine/stockfish-19-lite-single.wasm
+          test "$(wc -c < _site/engine/stockfish-19-lite-single.wasm)" -gt 1000000
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - name: Deploy site
         id: deployment
         uses: actions/deploy-pages@v4
