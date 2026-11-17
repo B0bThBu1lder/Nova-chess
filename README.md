@@ -1,32 +1,30 @@
-NOVA CHESS — iPhone PWA
+# NOVA CHESS — iPhone PWA
 
-WHAT'S INCLUDED
-- Responsive chessboard with legal move validation (chess.js)
-- Stockfish 19 lite single-threaded WebAssembly engine, loaded on first analysis
-- Approximate engine Elo limiter (Stockfish UCI_LimitStrength / UCI_Elo)
-- Bullet and Normal thinking presets
-- FEN position loading and copying
-- Best-move arrow, evaluation, depth, and play-best-move control
-- Saved preferences via localStorage
-- Theme colour, board colour, arrow colour, highlight colour, panel opacity, arrow opacity
-- PWA manifest and service worker app-shell cache
-- Same-origin worker loader for iOS Safari compatibility
+A mobile-first chess practice and analysis app with a starfield interface and local Stockfish engine.
 
-IMPORTANT iPHONE SETUP
-A PWA must be served from HTTPS (or localhost) to install and use its service worker. An HTML file opened directly from Files is not an installable PWA and may block workers.
+## Features
+- Interactive legal chessboard with undo, reset and flip
+- FEN import and copy
+- Stockfish 19 lite single-threaded engine
+- Approximate engine strength setting (1320–2850)
+- Bullet and Normal search presets
+- Saved preferences (ELO, depth, mode, highlight colour, opacity)
+- Installable PWA shell for iPhone Safari
 
-Quick deployment:
-1. Upload the contents of this folder to a static HTTPS host (for example GitHub Pages, Cloudflare Pages, or Netlify).
-2. Open the resulting HTTPS URL in Safari on iPhone.
-3. Tap Share → Add to Home Screen.
-4. Launch NOVA CHESS from the Home Screen.
-5. Tap Analyse position. The Stockfish worker is downloaded from jsDelivr on first use; internet is required for that first load.
+## Deploy
+1. Open repository Settings → Pages.
+2. Set the source to **GitHub Actions**.
+3. The included workflow deploys automatically on pushes to main.
+4. Open the URL shown under Settings → Pages or the successful Actions deployment.
 
-CHESS.COM LIMITATION
-This is a separate analysis app. iOS does not allow it to inspect or draw over the native Chess.com app. Enter a position using the board or paste a FEN. It is intended for analysis and study, not live-game assistance.
+## iPhone install
+Open the HTTPS Pages URL in Safari → Share → Add to Home Screen.
 
-ENGINE
-Stockfish.js v19.0.1 lite single-threaded build is loaded by stockfish-loader.js from:
-https://cdn.jsdelivr.net/npm/stockfish@19.0.1/bin/
-The loader sets the WASM asset URL explicitly. The app starts the same-origin worker wrapper, which imports the Stockfish script and avoids Safari's cross-origin Worker constructor restriction.
-Stockfish is GPL-3.0. chess.js is BSD-2-Clause.
+## Engine and network
+Stockfish 19.0.1 lite single-threaded WASM and chess.js 1.4.0 are loaded from pinned public CDNs. No ChatGPT API or hosted inference is used. An internet connection is needed to load the engine and chess.js on first use.
+
+Stockfish.js is GPL-3.0: https://github.com/nmrugg/stockfish.js
+chess.js is BSD-2-Clause: https://github.com/jhlywa/chess.js
+
+## Scope
+NOVA is a practice and analysis board. Positions are entered manually or through FEN. It does not inspect the Chess.com app, overlay another app, or provide move recommendations during live matches. The ELO control is an approximate engine-strength setting, not a calibrated human-rating guarantee.
