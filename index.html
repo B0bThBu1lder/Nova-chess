@@ -14,18 +14,45 @@ main{max-width:1050px;margin:auto;padding:16px;display:grid;grid-template-column
 <script type="module">
 import {Chess} from 'https://esm.sh/chess.js@1.4.0';
 const $=id=>document.getElementById(id),key='nova-settings-v1',defaults={elo:1500,depth:13,mode:'normal',opacity:94,colour:'#a78bfa'};
-let s={...defaults,...JSON.parse(localStorage.getItem(key)||'{}')},g=new Chess(),sel=null,flip=false,w=null,ready=false;
+let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')||{}}catch(e){}
+let s={...defaults,...saved},g=new Chess(),sel=null,flip=false,w=null,ready=false,pendingAnalysis=false,analysisRunning=false;
 const glyph={w:{k:'♔',q:'♕',r:'♖',b:'♗',n:'♘',p:'♙'},b:{k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'}};
 function save(){localStorage.setItem(key,JSON.stringify(s))}
 function history(){let h=g.history(),a=[];for(let i=0;i<h.length;i+=2)a.push((i/2+1)+'. '+h[i]+(h[i+1]?' '+h[i+1]:''));return a.join('\n')||'No moves yet.'}
 function render(){let files='abcdefgh',ranks='12345678';if(flip){files=[...files].reverse().join('');ranks=[...ranks].reverse().join('')}let legal=sel?g.moves({square:sel,verbose:true}):[];let b=$('board');b.innerHTML='';for(let r of ranks)for(let f of files){let sq=f+r,p=g.get(sq),el=document.createElement('button');el.className='sq '+((files.indexOf(f)+ranks.indexOf(r))%2?'dark':'light');if(sel===sq)el.classList.add('sel');if(legal.some(m=>m.to===sq))el.classList.add(p?'capture':'target');if(p)el.textContent=glyph[p.color][p.type];el.onclick=()=>tap(sq);b.append(el)}$('turn').textContent=g.isGameOver()?'GAME OVER':(g.turn()==='w'?'WHITE':'BLACK')+' TO MOVE';$('history').textContent=history()}
-function tap(sq){let p=g.get(sq);if(sel){try{let m=g.move({from:sel,to:sq,promotion:'q'});if(m){sel=null;$('hint').textContent=m.san+' played.';render();return}}catch(e){}}sel=p&&p.color===g.turn()?sq:null;render()}
+function positionChanged(){render();$('best').textContent='Analysing…';$('score').textContent='—';$('depthOut').textContent='—';pendingAnalysis=true;if(ready)runAnalysis();else startEngine()}
+function tap(sq){let p=g.get(sq);if(sel){try{let m=g.move({from:sel,to:sq,promotion:'q'});if(m){sel=null;$('hint').textContent=m.san+' played.';positionChanged();return}}catch(e){}}sel=p&&p.color===g.turn()?sq:null;render()}
 function ui(){ $('elo').value=s.elo;$('eloText').textContent=s.elo;$('depth').value=s.depth;$('depthText').textContent=s.depth;$('opacity').value=s.opacity;$('opacityText').textContent=s.opacity+'%';$('normal').classList.toggle('active',s.mode==='normal');$('bullet').classList.toggle('active',s.mode==='bullet');$('modeHint').textContent=s.mode==='bullet'?'Bullet: short search budget for quick practice.':'Normal: deeper search for considered training analysis.';document.documentElement.style.setProperty('--accent',s.colour);document.documentElement.style.setProperty('--opacity',s.opacity/100)}
 function status(t){$('status').textContent='● '+t.toUpperCase()}
-function start(){if(w)return;status('Loading engine');w=new Worker('./engine-worker.js');w.onmessage=e=>{let x=String(e.data);if(x==='uciok'){w.postMessage('setoption name Threads value 1');w.postMessage('setoption name UCI_LimitStrength value true');w.postMessage('isready')}else if(x==='readyok'){ready=true;status('Stockfish ready')}else if(x.startsWith('info ')){let d=x.match(/ depth (\d+)/),sc=x.match(/ score (cp|mate) (-?\d+)/);if(d)$('depthOut').textContent=d[1];if(sc)$('score').textContent=sc[1]==='mate'?'Mate '+sc[2]:(+sc[2]/100).toFixed(2)}else if(x.startsWith('bestmove ')){let m=x.split(' ')[1];if(m&&m!=='(none)'){$('best').textContent=m.slice(0,2)+' → '+m.slice(2,4)+(m.length>4?'='+m[4]:'');$('explain').textContent='Stockfish candidate for this practice position.';status('Analysis complete')}}};w.onerror=()=>{status('Engine load failed');$('explain').textContent='Could not load Stockfish. Check your connection.';w.terminate();w=null};w.postMessage('uci')}
-function analyse(){if(!ready){start();$('explain').textContent='Loading engine. Tap Analyse again once ready.';return}w.postMessage('stop');w.postMessage('setoption name UCI_Elo value '+s.elo);w.postMessage('position fen '+g.fen());w.postMessage('go depth '+(s.mode==='bullet'?Math.min(10,s.depth):s.depth));status('Analysing')}
-$('elo').oninput=e=>{s.elo=+e.target.value;$('eloText').textContent=s.elo;save()};$('depth').oninput=e=>{s.depth=+e.target.value;$('depthText').textContent=s.depth;save()};$('opacity').oninput=e=>{s.opacity=+e.target.value;ui();save()};$('normal').onclick=()=>{s.mode='normal';ui();save()};$('bullet').onclick=()=>{s.mode='bullet';ui();save()};document.querySelector('.swatches').onclick=e=>{if(e.target.dataset.col){s.colour=e.target.dataset.col;ui();save()}};
-$('reset').onclick=()=>{g.reset();sel=null;$('best').textContent='Analyse a position';$('score').textContent='—';render()};$('undo').onclick=()=>{g.undo();sel=null;render()};$('flip').onclick=()=>{flip=!flip;render()};$('analyse').onclick=analyse;$('loadEngine').onclick=start;$('stop').onclick=()=>{if(w&&ready)w.postMessage('stop');status(ready?'Stockfish ready':'Stopped')};
-$('fenCopy').onclick=async()=>{try{await navigator.clipboard.writeText(g.fen());$('hint').textContent='FEN copied.'}catch(e){$('fen').value=g.fen()}};$('fenLoad').onclick=()=>{try{g=new Chess($('fen').value.trim());sel=null;render();$('hint').textContent='FEN loaded.'}catch(e){$('hint').textContent='Invalid FEN. Check the notation.'}};
-ui();render();if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+function failEngine(message){ready=false;status('Engine error');$('best').textContent='Engine unavailable';$('explain').textContent=message||'Stockfish could not start. Check the connection and reload.';if(w){w.terminate();w=null}}
+function startEngine(){if(w||ready)return;status('Loading Stockfish…');$('explain').textContent='Downloading the Stockfish engine. This happens automatically.';try{w=new Worker('./engine-worker.js')}catch(e){failEngine(e.message);return}
+w.onmessage=e=>{const x=String(e.data);
+ if(x==='uciok'){w.postMessage('setoption name UCI_LimitStrength value true');w.postMessage('setoption name UCI_Elo value '+s.elo);w.postMessage('isready')}
+ else if(x==='readyok'){ready=true;status('Stockfish ready');if(pendingAnalysis)runAnalysis()}
+ else if(x.startsWith('info ')){let d=x.match(/ depth (\d+)/),sc=x.match(/ score (cp|mate) (-?\d+)/);if(d)$('depthOut').textContent=d[1];if(sc)$('score').textContent=sc[1]==='mate'?'Mate '+sc[2]:(+sc[2]/100).toFixed(2)}
+ else if(x.startsWith('bestmove ')){analysisRunning=false;let m=x.split(' ')[1];if(m&&m!=='(none)'){$('best').textContent=m.slice(0,2)+' → '+m.slice(2,4)+(m.length>4?'='+m[4]:'');$('explain').textContent='Stockfish candidate for this practice position.';status('Analysis complete')}else{$('best').textContent='No legal move';status('Position complete')}}
+};
+w.onerror=e=>failEngine(e.message||'The engine worker or its WASM file failed to load.');
+w.onmessageerror=()=>failEngine('The browser could not read the engine response.');
+w.postMessage('uci');
+}
+function runAnalysis(){if(!ready||!w){pendingAnalysis=true;startEngine();return}pendingAnalysis=false;analysisRunning=true;w.postMessage('stop');w.postMessage('setoption name UCI_Elo value '+s.elo);w.postMessage('position fen '+g.fen());w.postMessage('go depth '+(s.mode==='bullet'?Math.min(10,s.depth):s.depth));status('Analysing…')}
+function analyse(){pendingAnalysis=true;if(ready)runAnalysis();else startEngine()}
+$('elo').oninput=e=>{s.elo=+e.target.value;$('eloText').textContent=s.elo;save();if(ready)analyse()};
+$('depth').oninput=e=>{s.depth=+e.target.value;$('depthText').textContent=s.depth;save()};
+$('opacity').oninput=e=>{s.opacity=+e.target.value;ui();save()};
+$('normal').onclick=()=>{s.mode='normal';ui();save();if(ready)analyse()};
+$('bullet').onclick=()=>{s.mode='bullet';ui();save();if(ready)analyse()};
+document.querySelector('.swatches').onclick=e=>{if(e.target.dataset.col){s.colour=e.target.dataset.col;ui();save()}};
+$('reset').onclick=()=>{g.reset();sel=null;positionChanged()};
+$('undo').onclick=()=>{if(g.undo()){sel=null;positionChanged()}};
+$('flip').onclick=()=>{flip=!flip;render()};
+$('analyse').onclick=analyse;
+$('loadEngine').onclick=()=>{pendingAnalysis=false;startEngine()};
+$('stop').onclick=()=>{pendingAnalysis=false;if(w&&ready){w.postMessage('stop');analysisRunning=false;status('Stockfish ready')}};
+$('fenCopy').onclick=async()=>{try{await navigator.clipboard.writeText(g.fen());$('hint').textContent='FEN copied.'}catch(e){$('fen').value=g.fen()}};
+$('fenLoad').onclick=()=>{try{g=new Chess($('fen').value.trim());sel=null;$('hint').textContent='FEN loaded.';positionChanged()}catch(e){$('hint').textContent='Invalid FEN. Check the notation.'}};
+ui();render();
+if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+startEngine();
 </script></body></html>
